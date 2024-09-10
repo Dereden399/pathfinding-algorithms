@@ -21,7 +21,7 @@ find_package(OpenGL REQUIRED)
 include_directories(include /usr/local/include /usr/include)
 
 # Source files
-file(GLOB SOURCES "src/*.cpp" "src/*.c" "src/*.cpp")
+file(GLOB SOURCES "src/*.cpp" "src/*.c" "src/*.cpp" "src/renderer/*.cpp" "src/renderer/*.hpp")
 
 # Add the executable
 add_executable(project_executable ${SOURCES})
