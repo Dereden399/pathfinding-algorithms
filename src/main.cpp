@@ -1,5 +1,6 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
+#include <glm/gtc/matrix_transform.hpp>
 
 #include <iostream>
 #include <memory>
@@ -27,6 +28,9 @@ int main() {
     glfwMakeContextCurrent(window);
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
 
+    int SCREEN_WIDTH, SCREEN_HEIGHT;
+    glfwGetFramebufferSize(window, &SCREEN_WIDTH, &SCREEN_HEIGHT);
+
     if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
         std::cout << "Failed to initialize GLAD" << std::endl;
         return -1;
@@ -40,9 +44,21 @@ int main() {
         processInput(window);
 
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
-        glClear(GL_COLOR_BUFFER_BIT);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        shader->use();
 
-        context.drawRectangle(0.0f, 0.0f, 0.5f, 0.5f);
+        glm::mat4 view =
+            glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, -1.0f));
+        shader->setUniform("view", view);
+        auto proj = glm::ortho(0.0f, 800.0f, 0.0f, 600.0f, 0.1f, 10.0f);
+        shader->setUniform("projection", proj);
+
+        context.drawRectangle(100.0f, 0.0f, 200.0f, 200.0f,
+                              glm::vec4(1.0f, 0.0f, 0.0f, 1.0f));
+        context.drawRectangle(300.0f, 0.0f, 200.0f, 200.0f,
+                              glm::vec4(0.0f, 1.0f, 0.0f, 1.0f));
+        context.drawRectangle(500.0f, 0.0f, 200.0f, 200.0f,
+                              glm::vec4(0.0f, 0.0f, 1.0f, 1.0f));
 
         glfwPollEvents();
         glfwSwapBuffers(window);
@@ -57,7 +73,5 @@ void processInput(GLFWwindow *window) {
 }
 
 void framebuffer_size_callback(GLFWwindow *window, int width, int height) {
-    int width_, height_;
-    glfwGetFramebufferSize(window, &width_, &height_);
-    glViewport(0, 0, width_, height_);
+    glViewport(0, 0, width, height);
 }

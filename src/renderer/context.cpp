@@ -4,6 +4,7 @@
 #include <string>
 #include <sstream>
 #include <iostream>
+#include <glm/gtc/matrix_transform.hpp>
 
 Context::Context() {
     glGenVertexArrays(1, &baseVAO);
@@ -28,6 +29,12 @@ Context::Context() {
 
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindVertexArray(0);
+
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    glEnable(GL_DEPTH_TEST);
+
+    shader = nullptr;
 }
 
 Context::~Context() {
@@ -111,10 +118,14 @@ std::shared_ptr<Shader> Context::setShaderProgramFiles(
     return setShaderProgramSource(vShaderCode, fShaderCode);
 }
 
-void Context::drawRectangle(float x, float y, float width, float height) {
-    // magic magic work work
+void Context::drawRectangle(float x, float y, float width, float height,
+                            glm::vec4 color) {
+    glm::mat4 model =
+        glm::scale(glm::translate(glm::mat4(1.0f), glm::vec3(x, y, 0.0f)),
+                   glm::vec3(width, height, 1));
+    shader->setUniform("model", model);
+    shader->setUniform("color", color);
 
-    glUseProgram(shader->id);
     glBindVertexArray(baseVAO);
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 }

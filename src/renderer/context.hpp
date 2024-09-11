@@ -2,6 +2,7 @@
 #define CONTEXT_HPP
 
 #include <memory>
+#include <glm/glm.hpp>
 #include "shader.hpp"
 
 struct Vertex {
@@ -12,10 +13,10 @@ struct Vertex {
 class Context {
     unsigned int baseVAO, baseVBO, baseEBO;
     std::shared_ptr<Shader> shader;
-    Vertex baseVertices[4] = {{-0.5f, -0.5f, 0.0f, 0.0f, 0.0f},
-                              {0.5f, -0.5f, 0.0f, 1.0f, 0.0f},
-                              {0.5f, 0.5f, 0.0f, 1.0f, 1.0f},
-                              {-0.5f, 0.5f, 0.0f, 0.0f, 1.0f}};
+    Vertex baseVertices[4] = {{0.0f, 0.0f, 0.0f, 0.0f, 0.0f},
+                              {1.0f, 0.0f, 0.0f, 1.0f, 0.0f},
+                              {1.0f, 1.0f, 0.0f, 1.0f, 1.0f},
+                              {0.0f, 1.0f, 0.0f, 0.0f, 1.0f}};
     unsigned int baseIndices[6] = {0, 1, 2, 2, 3, 0};
 
    public:
@@ -34,7 +35,8 @@ class Context {
     std::shared_ptr<Shader> setShaderProgramFiles(
         const char* vertexShaderPath, const char* fragmentShaderPath);
 
-    void drawRectangle(float x, float y, float width, float height);
+    void drawRectangle(float x, float y, float width, float height,
+                       glm::vec4 color = glm::vec4(1.0f));
 };
 
 #endif
