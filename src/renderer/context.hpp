@@ -35,7 +35,7 @@ class Context {
     std::shared_ptr<Shader> setShaderProgramFiles(
         const char* vertexShaderPath, const char* fragmentShaderPath);
 
-    void drawRectangle(float x, float y, float width, float height,
+    void drawRectangle(float x, float y, float width, float height, int z = 0,
                        glm::vec4 color = glm::vec4(1.0f));
 };
 

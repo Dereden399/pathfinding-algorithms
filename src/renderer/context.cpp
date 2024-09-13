@@ -118,10 +118,10 @@ std::shared_ptr<Shader> Context::setShaderProgramFiles(
     return setShaderProgramSource(vShaderCode, fShaderCode);
 }
 
-void Context::drawRectangle(float x, float y, float width, float height,
+void Context::drawRectangle(float x, float y, float width, float height, int z,
                             glm::vec4 color) {
     glm::mat4 model =
-        glm::scale(glm::translate(glm::mat4(1.0f), glm::vec3(x, y, 0.0f)),
+        glm::scale(glm::translate(glm::mat4(1.0f), glm::vec3(x, y, z)),
                    glm::vec3(width, height, 1));
     shader->setUniform("model", model);
     shader->setUniform("color", color);
