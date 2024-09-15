@@ -7,8 +7,10 @@
 #include <vector>
 #include "renderer/context.hpp"
 #include "problem.hpp"
+#include "solver.hpp"
 
-void processInput(GLFWwindow *window, Problem &problem, short &drawingMode);
+void processInput(GLFWwindow *window, Problem &problem, short &drawingMode,
+                  std::unique_ptr<Solver> &solver);
 
 void framebuffer_size_callback(GLFWwindow *window, int width, int height);
 
@@ -47,9 +49,10 @@ int main() {
 
     short drawingMode = 1;
     Problem problem = Problem(800 / 50, 600 / 50);
+    std::unique_ptr<Solver> solver = std::make_unique<AStarSolver>();
 
     while (!glfwWindowShouldClose(window)) {
-        processInput(window, problem, drawingMode);
+        processInput(window, problem, drawingMode, solver);
 
         glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -70,7 +73,8 @@ int main() {
     return 0;
 }
 
-void processInput(GLFWwindow *window, Problem &problem, short &drawingMode) {
+void processInput(GLFWwindow *window, Problem &problem, short &drawingMode,
+                  std::unique_ptr<Solver> &solver) {
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
         glfwSetWindowShouldClose(window, true);
     if (glfwGetKey(window, GLFW_KEY_1) == GLFW_PRESS) {
@@ -82,13 +86,11 @@ void processInput(GLFWwindow *window, Problem &problem, short &drawingMode) {
     if (glfwGetKey(window, GLFW_KEY_3) == GLFW_PRESS) {
         drawingMode = 3;
     }
+    if (glfwGetKey(window, GLFW_KEY_0) == GLFW_PRESS) {
+        solver = std::make_unique<AStarSolver>();
+    }
     if (glfwGetKey(window, GLFW_KEY_C) == GLFW_PRESS) {
-        problem.grid = std::vector<std::vector<short>>(
-            problem.n, std::vector<short>(problem.m, 0));
-        problem.start[0] = -1;
-        problem.start[1] = -1;
-        problem.goal[0] = -1;
-        problem.goal[1] = -1;
+        problem = Problem(800 / 50, 600 / 50);
     }
     if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
         drawingMode = 10;
@@ -133,6 +135,14 @@ void processInput(GLFWwindow *window, Problem &problem, short &drawingMode) {
             problem.start[1] = -1;
         }
     }
+    if (glfwGetKey(window, GLFW_KEY_BACKSPACE) == GLFW_PRESS) {
+        solver->solved = false;
+        problem.solution = {};
+    }
+    if (glfwGetKey(window, GLFW_KEY_ENTER) == GLFW_PRESS) {
+        if (solver->solved) return;
+        solver->solve(problem);
+    }
 }
 
 void drawGrid(Context &ctx, Problem &problem) {
@@ -172,6 +182,10 @@ void drawGrid(Context &ctx, Problem &problem) {
     if (problem.goal[0] != -1 && problem.goal[1] != -1) {
         ctx.drawRectangle(problem.goal[0] * 50 + 10, problem.goal[1] * 50 + 10,
                           30, 30, 1, glm::vec4(1.0f, 1.0f, 0.0f, 1.0f));
+    }
+    for (const auto &cell : problem.solution) {
+        ctx.drawRectangle(cell[0] * 50 + 15, cell[1] * 50 + 15, 20, 20, 2,
+                          glm::vec4(1.0f, 0.0f, 1.0f, 1.0f));
     }
 }
 
