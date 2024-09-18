@@ -50,6 +50,7 @@ int main() {
     short drawingMode = 1;
     Problem problem = Problem(800 / 50, 600 / 50);
     std::unique_ptr<Solver> solver = std::make_unique<AStarSolver>();
+    glfwSetWindowTitle(window, solver->getName().c_str());
 
     while (!glfwWindowShouldClose(window)) {
         processInput(window, problem, drawingMode, solver);
@@ -88,6 +89,7 @@ void processInput(GLFWwindow *window, Problem &problem, short &drawingMode,
     }
     if (glfwGetKey(window, GLFW_KEY_0) == GLFW_PRESS) {
         solver = std::make_unique<AStarSolver>();
+        glfwSetWindowTitle(window, solver->getName().c_str());
     }
     if (glfwGetKey(window, GLFW_KEY_C) == GLFW_PRESS) {
         problem = Problem(800 / 50, 600 / 50);
