@@ -91,6 +91,10 @@ void processInput(GLFWwindow *window, Problem &problem, short &drawingMode,
         solver = std::make_unique<AStarSolver>();
         glfwSetWindowTitle(window, solver->getName().c_str());
     }
+    if (glfwGetKey(window, GLFW_KEY_9) == GLFW_PRESS) {
+        solver = std::make_unique<DijkstraSolver>();
+        glfwSetWindowTitle(window, solver->getName().c_str());
+    }
     if (glfwGetKey(window, GLFW_KEY_C) == GLFW_PRESS) {
         problem = Problem(800 / 50, 600 / 50);
     }
@@ -143,7 +147,10 @@ void processInput(GLFWwindow *window, Problem &problem, short &drawingMode,
     }
     if (glfwGetKey(window, GLFW_KEY_ENTER) == GLFW_PRESS) {
         if (solver->solved) return;
-        solver->solve(problem);
+        int cost = solver->solve(problem);
+        glfwSetWindowTitle(
+            window, (solver->getName() + ". Path cost: " + std::to_string(cost))
+                        .c_str());
     }
 }
 
