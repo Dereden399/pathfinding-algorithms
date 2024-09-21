@@ -8,8 +8,9 @@
 #include "renderer/context.hpp"
 #include "problem.hpp"
 #include "solver.hpp"
+#include "utils.hpp"
 
-void processInput(GLFWwindow *window, Problem &problem, short &drawingMode,
+void processInput(GLFWwindow *window, Problem &problem, DrawMode &drawingMode,
                   std::unique_ptr<Solver> &solver);
 
 void framebuffer_size_callback(GLFWwindow *window, int width, int height);
@@ -47,7 +48,7 @@ int main() {
     std::shared_ptr<Shader> shader = context.setShaderProgramFiles(
         "shaders/vertex.glsl", "shaders/fragment.glsl");
 
-    short drawingMode = 1;
+    auto drawingMode = DrawMode::WALL;
     Problem problem = Problem(800 / 50, 600 / 50);
     std::unique_ptr<Solver> solver = std::make_unique<AStarSolver>();
     glfwSetWindowTitle(window, solver->getName().c_str());
@@ -74,18 +75,18 @@ int main() {
     return 0;
 }
 
-void processInput(GLFWwindow *window, Problem &problem, short &drawingMode,
+void processInput(GLFWwindow *window, Problem &problem, DrawMode &drawingMode,
                   std::unique_ptr<Solver> &solver) {
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
         glfwSetWindowShouldClose(window, true);
     if (glfwGetKey(window, GLFW_KEY_1) == GLFW_PRESS) {
-        drawingMode = 1;
+        drawingMode = DrawMode::WALL;
     }
     if (glfwGetKey(window, GLFW_KEY_2) == GLFW_PRESS) {
-        drawingMode = 2;
+        drawingMode = DrawMode::FOREST;
     }
     if (glfwGetKey(window, GLFW_KEY_3) == GLFW_PRESS) {
-        drawingMode = 3;
+        drawingMode = DrawMode::WATER;
     }
     if (glfwGetKey(window, GLFW_KEY_0) == GLFW_PRESS) {
         solver = std::make_unique<AStarSolver>();
@@ -99,47 +100,26 @@ void processInput(GLFWwindow *window, Problem &problem, short &drawingMode,
         problem = Problem(800 / 50, 600 / 50);
     }
     if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
-        drawingMode = 10;
+        drawingMode = DrawMode::PATH_START;
     }
     if (glfwGetKey(window, GLFW_KEY_G) == GLFW_PRESS) {
-        drawingMode = 11;
+        drawingMode = DrawMode::PATH_GOAL;
     }
     if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS) {
         double xpos, ypos;
         glfwGetCursorPos(window, &xpos, &ypos);
         int x = xpos / 50;
         int y = (600 - ypos) / 50;
-        if (x >= 800 / 50 || y >= 600 / 50) return;
-        if (drawingMode == 10) {
-            if (problem.grid[x][y] == 1 ||
-                (problem.goal[0] == x && problem.goal[1] == y))
-                return;
-            problem.start[0] = x;
-            problem.start[1] = y;
-        } else if (drawingMode == 11) {
-            if (problem.grid[x][y] == 1 ||
-                (problem.start[0] == x && problem.start[1] == y))
-                return;
-            problem.goal[0] = x;
-            problem.goal[1] = y;
-        } else
-            problem.grid[x][y] = drawingMode;
+        if (x >= 800 / 50 || y >= 600 / 50 || x < 0 || y < 0) return;
+        problem.setCell(x, y, drawingMode);
     }
     if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS) {
         double xpos, ypos;
         glfwGetCursorPos(window, &xpos, &ypos);
         int x = xpos / 50;
         int y = (600 - ypos) / 50;
-        if (x >= 800 / 50 || y >= 600 / 50) return;
-        problem.grid[x][y] = 0;
-        if (problem.goal[0] == x && problem.goal[1] == y) {
-            problem.goal[0] = -1;
-            problem.goal[1] = -1;
-        }
-        if (problem.start[0] == x && problem.start[1] == y) {
-            problem.start[0] = -1;
-            problem.start[1] = -1;
-        }
+        if (x >= 800 / 50 || y >= 600 / 50 || x < 0 || y < 0) return;
+        problem.clearCell(x, y);
     }
     if (glfwGetKey(window, GLFW_KEY_BACKSPACE) == GLFW_PRESS) {
         solver->solved = false;
@@ -163,37 +143,29 @@ void drawGrid(Context &ctx, Problem &problem) {
         ctx.drawRectangle(0.0f, i, 800.0f, 2.0f, 0,
                           glm::vec4(0.0f, 0.0f, 0.0f, 1.0f));
     }
-    auto grid = problem.grid;
+    auto &grid = problem.grid;
     for (int i = 0; i < grid.size(); i++) {
         for (int j = 0; j < grid[i].size(); j++) {
-            if (grid[i][j] == 0) {
+            if (grid[i][j].type == CellType::CLEAR) {
                 continue;
             }
-            if (grid[i][j] == 1) {
-                ctx.drawRectangle(i * 50, j * 50, 50, 50, 0,
-                                  glm::vec4(0.0f, 0.0f, 0.0f, 1.0f));
-            }
-            if (grid[i][j] == 2) {
-                ctx.drawRectangle(i * 50, j * 50, 50, 50, 0,
-                                  glm::vec4(0.0f, 1.0f, 0.0f, 1.0f));
-            }
-            if (grid[i][j] == 3) {
-                ctx.drawRectangle(i * 50, j * 50, 50, 50, 0,
-                                  glm::vec4(0.0f, 0.0f, 1.0f, 1.0f));
-            }
+            ctx.drawRectangle(i * 50, j * 50, 50, 50, 0,
+                              getCellColor(grid[i][j].type));
         }
     }
-    if (problem.start[0] != -1 && problem.start[1] != -1) {
-        ctx.drawRectangle(problem.start[0] * 50 + 10,
-                          problem.start[1] * 50 + 10, 30, 30, 1,
+    if (problem.start) {
+        ctx.drawRectangle(problem.start->x * 50 + 10,
+                          problem.start->y * 50 + 10, 30, 30, 1,
                           glm::vec4(1.0f, 0.0f, 0.0f, 1.0f));
     }
-    if (problem.goal[0] != -1 && problem.goal[1] != -1) {
-        ctx.drawRectangle(problem.goal[0] * 50 + 10, problem.goal[1] * 50 + 10,
+    if (problem.goal) {
+        ctx.drawRectangle(problem.goal->x * 50 + 10, problem.goal->y * 50 + 10,
                           30, 30, 1, glm::vec4(1.0f, 1.0f, 0.0f, 1.0f));
     }
-    for (const auto &cell : problem.solution) {
-        ctx.drawRectangle(cell[0] * 50 + 15, cell[1] * 50 + 15, 20, 20, 2,
+    for (const auto cell : problem.solution) {
+        int x = cell->x;
+        int y = cell->y;
+        ctx.drawRectangle(x * 50 + 15, y * 50 + 15, 20, 20, 2,
                           glm::vec4(1.0f, 0.0f, 1.0f, 1.0f));
     }
 }

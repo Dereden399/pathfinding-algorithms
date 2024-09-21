@@ -3,24 +3,21 @@
 
 #include <vector>
 
+#include "cell.hpp"
+#include "utils.hpp"
+
 struct Problem {
     int n;
     int m;
-    std::vector<std::vector<short>> grid;
-    std::vector<std::vector<int>> solution;
-    int start[2];
-    int goal[2];
+    std::vector<std::vector<Cell>> grid;
+    std::vector<Cell*> solution;
+    Cell* start;
+    Cell* goal;
 
-    Problem(int n, int m) {
-        this->n = n;
-        this->m = m;
-        grid = std::vector<std::vector<short>>(n, std::vector<short>(m, 0));
-        solution = {};
-        start[0] = -1;
-        start[1] = -1;
-        goal[0] = -1;
-        goal[1] = -1;
-    }
+    Problem(int n, int m);
+    void clearSolution();
+    void setCell(unsigned int x, unsigned int y, DrawMode mode);
+    void clearCell(unsigned int x, unsigned int y);
 };
 
 #endif
