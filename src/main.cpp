@@ -10,8 +10,10 @@
 #include "solver.hpp"
 #include "utils.hpp"
 
-void processInput(GLFWwindow *window, Problem &problem, DrawMode &drawingMode,
-                  std::unique_ptr<Solver> &solver);
+const double SOLVING_SPEED = 0.01;
+
+void processInput(GLFWwindow *window, double time, Problem &problem,
+                  DrawMode &drawingMode, std::unique_ptr<Solver> &solver);
 
 void framebuffer_size_callback(GLFWwindow *window, int width, int height);
 
@@ -53,8 +55,23 @@ int main() {
     std::unique_ptr<Solver> solver = std::make_unique<AStarSolver>();
     glfwSetWindowTitle(window, solver->getName().c_str());
 
+    double currentFrame = glfwGetTime();
+    double lastFrame = currentFrame;
+    double deltaTime;
+
     while (!glfwWindowShouldClose(window)) {
-        processInput(window, problem, drawingMode, solver);
+        currentFrame = glfwGetTime();
+        deltaTime = currentFrame - lastFrame;
+        lastFrame = currentFrame;
+        processInput(window, currentFrame, problem, drawingMode, solver);
+        if (solver->solving &&
+            currentFrame - solver->lastStepTime >= SOLVING_SPEED) {
+            solver->lastStepTime = currentFrame;
+            int res = solver->stepSolve(problem);
+            glfwSetWindowTitle(window, (solver->getName() +
+                                        ". Path cost: " + std::to_string(res))
+                                           .c_str());
+        }
 
         glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -75,8 +92,8 @@ int main() {
     return 0;
 }
 
-void processInput(GLFWwindow *window, Problem &problem, DrawMode &drawingMode,
-                  std::unique_ptr<Solver> &solver) {
+void processInput(GLFWwindow *window, double time, Problem &problem,
+                  DrawMode &drawingMode, std::unique_ptr<Solver> &solver) {
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
         glfwSetWindowShouldClose(window, true);
     if (glfwGetKey(window, GLFW_KEY_1) == GLFW_PRESS) {
@@ -88,6 +105,17 @@ void processInput(GLFWwindow *window, Problem &problem, DrawMode &drawingMode,
     if (glfwGetKey(window, GLFW_KEY_3) == GLFW_PRESS) {
         drawingMode = DrawMode::WATER;
     }
+    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
+        drawingMode = DrawMode::PATH_START;
+    }
+    if (glfwGetKey(window, GLFW_KEY_G) == GLFW_PRESS) {
+        drawingMode = DrawMode::PATH_GOAL;
+    }
+    // Next input operations are not available during solving
+    if (solver->solving) {
+        return;
+    }
+
     if (glfwGetKey(window, GLFW_KEY_0) == GLFW_PRESS) {
         solver = std::make_unique<AStarSolver>();
         glfwSetWindowTitle(window, solver->getName().c_str());
@@ -98,12 +126,8 @@ void processInput(GLFWwindow *window, Problem &problem, DrawMode &drawingMode,
     }
     if (glfwGetKey(window, GLFW_KEY_C) == GLFW_PRESS) {
         problem = Problem(800 / 50, 600 / 50);
-    }
-    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
-        drawingMode = DrawMode::PATH_START;
-    }
-    if (glfwGetKey(window, GLFW_KEY_G) == GLFW_PRESS) {
-        drawingMode = DrawMode::PATH_GOAL;
+        solver->solved = false;
+        solver->solving = false;
     }
     if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS) {
         double xpos, ypos;
@@ -123,14 +147,10 @@ void processInput(GLFWwindow *window, Problem &problem, DrawMode &drawingMode,
     }
     if (glfwGetKey(window, GLFW_KEY_BACKSPACE) == GLFW_PRESS) {
         solver->solved = false;
-        problem.solution = {};
+        problem.restart();
     }
     if (glfwGetKey(window, GLFW_KEY_ENTER) == GLFW_PRESS) {
-        if (solver->solved) return;
-        int cost = solver->solve(problem);
-        glfwSetWindowTitle(
-            window, (solver->getName() + ". Path cost: " + std::to_string(cost))
-                        .c_str());
+        solver->solve(problem);
     }
 }
 
@@ -146,11 +166,8 @@ void drawGrid(Context &ctx, Problem &problem) {
     auto &grid = problem.grid;
     for (int i = 0; i < grid.size(); i++) {
         for (int j = 0; j < grid[i].size(); j++) {
-            if (grid[i][j].type == CellType::CLEAR) {
-                continue;
-            }
             ctx.drawRectangle(i * 50, j * 50, 50, 50, 0,
-                              getCellColor(grid[i][j].type));
+                              getCellColor(grid[i][j]));
         }
     }
     if (problem.start) {

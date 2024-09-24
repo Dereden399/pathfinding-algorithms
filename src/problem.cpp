@@ -55,3 +55,12 @@ void Problem::clearCell(unsigned int x, unsigned int y) {
         goal = nullptr;
     }
 };
+
+void Problem::restart() {
+    solution.clear();
+    for (int x = 0; x < n; x++) {
+        for (int y = 0; y < m; y++) {
+            grid[x][y].visited = false;
+        }
+    }
+};

@@ -3,7 +3,6 @@
 
 #include <vector>
 
-#include "cell.hpp"
 #include "utils.hpp"
 
 struct Problem {
@@ -18,6 +17,7 @@ struct Problem {
     void clearSolution();
     void setCell(unsigned int x, unsigned int y, DrawMode mode);
     void clearCell(unsigned int x, unsigned int y);
+    void restart();
 };
 
 #endif
